@@ -3,82 +3,325 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cold Call Screen</title>
+  <title>Cold Call Guide</title>
   <style>
+    * { box-sizing: border-box; }
     body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; color: #1f2933; }
-    header { background: #1f3a5f; color: white; padding: 16px 24px; }
-    main { display: flex; gap: 24px; padding: 24px; flex-wrap: wrap; }
-    .panel { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    #list { flex: 1; min-width: 260px; }
-    #detail { flex: 2; min-width: 300px; }
-    .caller { padding: 10px; border: 1px solid #d9e2ec; border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
-    .caller:hover { background: #eef3f8; }
-    .caller.active { border-color: #1f3a5f; background: #eef3f8; }
-    .name { font-weight: bold; }
-    .company { color: #52606d; font-size: 14px; }
-    #tip { white-space: pre-wrap; line-height: 1.5; margin-top: 12px; }
+    header { background: #1f3a5f; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    header h2 { margin: 0; font-size: 18px; }
+    nav button { background: transparent; color: white; border: 1px solid #8fa8c8; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-left: 6px; }
+    nav button.on { background: white; color: #1f3a5f; }
+    main { max-width: 620px; margin: 0 auto; padding: 16px; }
+    .card { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 14px; }
+    label { display: block; font-size: 13px; color: #52606d; margin: 10px 0 4px; }
+    input, textarea, select { width: 100%; padding: 9px; border: 1px solid #bcccdc; border-radius: 6px; font-size: 15px; font-family: inherit; }
+    textarea { min-height: 80px; }
+    button.main { background: #1f3a5f; color: white; border: none; padding: 11px 16px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; }
+    button.main:disabled { background: #9fb3c8; cursor: default; }
+    button.ghost { background: white; color: #1f3a5f; border: 1px solid #1f3a5f; padding: 11px 16px; border-radius: 6px; cursor: pointer; font-size: 15px; }
+    .row { display: flex; gap: 8px; margin-top: 14px; }
+    .row button { flex: 1; }
+    .steps { display: flex; gap: 4px; margin: 10px 0; }
+    .step { flex: 1; text-align: center; padding: 6px 0; font-size: 12px; border-radius: 4px; background: #e4e7eb; color: #52606d; }
+    .step.done { background: #9fb3c8; color: white; }
+    .step.now { background: #1f3a5f; color: white; font-weight: bold; }
+    .small { font-size: 12px; color: #7b8794; text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 6px; }
+    .say { border-left: 3px solid #1f3a5f; background: #f4f6f8; padding: 8px 10px; margin-bottom: 6px; font-size: 14px; }
+    .taps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tap { padding: 10px; border: 1px solid #bcccdc; border-radius: 6px; background: white; cursor: pointer; font-size: 14px; text-align: center; }
+    .tap.on { background: #1f3a5f; color: white; border-color: #1f3a5f; }
     .muted { color: #7b8794; }
+    .msg { margin-top: 10px; padding: 10px; border-radius: 6px; background: #eef3f8; font-size: 14px; }
+    .bad { background: #fde8e8; }
+    .good { background: #e6f6ec; }
+    .past { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #e4e7eb; }
+    .past:last-child { border-bottom: none; }
+    .tag { font-size: 12px; background: #eef3f8; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
   </style>
 </head>
 <body>
   <header>
-    <h2 style="margin:0">Cold Call Screen</h2>
+    <h2>Cold Call Guide</h2>
+    <nav>
+      <button id="navCall" class="on" onclick="showView('call')">Call</button>
+      <button id="navPast" onclick="showView('past')">Past calls</button>
+    </nav>
   </header>
+
   <main>
-    <div id="list" class="panel">
-      <h3 style="margin-top:0">Callers</h3>
-      <div id="callers" class="muted">Loading callers... the first load can take up to a minute</div>
+    <div id="viewCall">
+      <div id="startBox" class="card">
+        <h3 style="margin-top:0">Start a call</h3>
+        <label>Prospect name</label>
+        <input id="pname" placeholder="For example Mr. Sharma">
+        <label>Company</label>
+        <input id="pcompany" placeholder="For example Bhagwati Automotive">
+        <div class="row"><button class="main" id="startBtn" onclick="startCall()">Start call</button></div>
+        <div id="startMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+
+      <div id="callBox" class="card" style="display:none">
+        <div><b id="who"></b> <span class="muted" id="whoCo"></span></div>
+        <div class="steps" id="steps"></div>
+
+        <div class="small" id="stageLabel"></div>
+        <h3 style="margin:0 0 4px" id="stageName"></h3>
+        <div id="stagePurpose"></div>
+
+        <div class="small">What prospects tend to say</div>
+        <div id="say"></div>
+
+        <div class="small">What happened</div>
+        <div class="taps" id="taps"></div>
+
+        <div class="small">Prospect's own words</div>
+        <textarea id="words" placeholder="Type exactly what they said"></textarea>
+
+        <div class="row">
+          <button class="main" id="nextBtn" onclick="nextStage()">Next</button>
+          <button class="ghost" onclick="openEnd()">End call</button>
+        </div>
+        <div id="callMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+
+      <div id="endBox" class="card" style="display:none">
+        <h3 style="margin-top:0">End the call</h3>
+        <label>Outcome</label>
+        <select id="outcome">
+          <option value="">Choose an outcome</option>
+          <option>agreed_to_receive_report</option>
+          <option>next_step_agreed</option>
+          <option>interested</option>
+          <option>follow_up</option>
+          <option>call_again</option>
+          <option>not_interested</option>
+          <option>do_not_call</option>
+          <option>wrong_person</option>
+          <option>moved_company</option>
+          <option>not_logged</option>
+        </select>
+        <div class="row">
+          <button class="ghost" onclick="checkOutcome()">Check my outcome</button>
+          <button class="main" onclick="closeCall()">Save and close</button>
+        </div>
+        <div id="endMsg" class="msg" style="display:none"></div>
+      </div>
     </div>
-    <div id="detail" class="panel">
-      <h3 style="margin-top:0">Call Helper</h3>
-      <div id="info" class="muted">Click a caller on the left</div>
-      <div id="tip"></div>
+
+    <div id="viewPast" style="display:none">
+      <div class="card">
+        <h3 style="margin-top:0">Past calls</h3>
+        <div id="pastList" class="muted">Loading</div>
+      </div>
     </div>
   </main>
 
   <script>
     var BACKEND = "https://coldcall-backend-hema.onrender.com";
+    var stages = [];
+    var call = null;
+    var stageNo = 1;
+    var picked = "";
 
-    async function loadCallers() {
-      var box = document.getElementById("callers");
+    function el(id) { return document.getElementById(id); }
+
+    function showView(v) {
+      el("viewCall").style.display = v === "call" ? "block" : "none";
+      el("viewPast").style.display = v === "past" ? "block" : "none";
+      el("navCall").className = v === "call" ? "on" : "";
+      el("navPast").className = v === "past" ? "on" : "";
+      if (v === "past") loadPast();
+    }
+
+    async function api(path, method, body) {
+      var opts = { method: method || "GET", headers: { "Content-Type": "application/json" } };
+      if (body) opts.body = JSON.stringify(body);
+      var res = await fetch(BACKEND + path, opts);
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+      return data;
+    }
+
+    async function loadStages() {
+      el("startMsg").textContent = "Waking up the server, the first load can take up to a minute";
       try {
-        var res = await fetch(BACKEND + "/callers");
-        var data = await res.json();
+        stages = await api("/stages");
+        el("startMsg").textContent = "";
+      } catch (e) {
+        el("startMsg").textContent = "Could not load stages. Please refresh the page";
+      }
+    }
+
+    async function startCall() {
+      var name = el("pname").value.trim();
+      if (!name) { el("startMsg").textContent = "Please type the prospect name"; return; }
+      if (!stages.length) { el("startMsg").textContent = "Stages are still loading, wait a moment"; return; }
+      el("startBtn").disabled = true;
+      try {
+        call = await api("/calls", "POST", { prospect_name: name, company: el("pcompany").value.trim() });
+        stageNo = 1;
+        el("who").textContent = call.prospect_name;
+        el("whoCo").textContent = call.company ? "from " + call.company : "";
+        el("startBox").style.display = "none";
+        el("endBox").style.display = "none";
+        el("callBox").style.display = "block";
+        renderStage();
+      } catch (e) {
+        el("startMsg").textContent = "Could not start the call: " + e.message;
+      }
+      el("startBtn").disabled = false;
+    }
+
+    function renderStage() {
+      var s = stages[stageNo - 1];
+      picked = "";
+      el("words").value = "";
+      el("callMsg").textContent = "";
+      var steps = el("steps");
+      steps.innerHTML = "";
+      for (var i = 1; i <= 8; i++) {
+        var d = document.createElement("div");
+        d.className = "step" + (i < stageNo ? " done" : "") + (i === stageNo ? " now" : "");
+        d.textContent = i;
+        steps.appendChild(d);
+      }
+      el("stageLabel").textContent = "Stage " + s.number + " of 8";
+      el("stageName").textContent = s.name;
+      el("stagePurpose").textContent = s.purpose;
+      var say = el("say");
+      say.innerHTML = "";
+      s.prospects_say.forEach(function (t) {
+        var d = document.createElement("div");
+        d.className = "say";
+        d.textContent = t;
+        say.appendChild(d);
+      });
+      var taps = el("taps");
+      taps.innerHTML = "";
+      s.taps.forEach(function (t) {
+        var b = document.createElement("div");
+        b.className = "tap";
+        b.textContent = t;
+        b.onclick = function () {
+          picked = t;
+          Array.prototype.forEach.call(taps.children, function (c) { c.className = "tap"; });
+          b.className = "tap on";
+        };
+        taps.appendChild(b);
+      });
+      var next = stages[stageNo];
+      el("nextBtn").textContent = next ? "Next: " + next.name : "Finish: end the call";
+    }
+
+    async function saveCurrentStage() {
+      var words = el("words").value.trim();
+      if (!picked && !words) return;
+      await api("/calls/" + call.id + "/stage", "POST", {
+        stage: stageNo,
+        what_happened: picked,
+        prospect_words: words
+      });
+    }
+
+    async function nextStage() {
+      el("nextBtn").disabled = true;
+      try {
+        await saveCurrentStage();
+        if (stageNo >= 8) {
+          openEnd(true);
+        } else {
+          stageNo += 1;
+          renderStage();
+        }
+      } catch (e) {
+        el("callMsg").textContent = "Could not save: " + e.message;
+      }
+      el("nextBtn").disabled = false;
+    }
+
+    async function openEnd(alreadySaved) {
+      try {
+        if (!alreadySaved) await saveCurrentStage();
+      } catch (e) {
+        el("callMsg").textContent = "Could not save: " + e.message;
+        return;
+      }
+      el("callBox").style.display = "none";
+      el("endBox").style.display = "block";
+      el("endMsg").style.display = "none";
+    }
+
+    function endMessage(text, cls) {
+      var m = el("endMsg");
+      m.style.display = "block";
+      m.className = "msg " + (cls || "");
+      m.textContent = text;
+    }
+
+    async function checkOutcome() {
+      var o = el("outcome").value;
+      if (!o) { endMessage("Please choose an outcome first"); return; }
+      endMessage("Checking...");
+      try {
+        var r = await api("/calls/" + call.id + "/check", "POST", { outcome: o });
+        var t = (r.check || "").trim();
+        endMessage(t, t.toUpperCase().indexOf("MISMATCH") === 0 ? "bad" : "good");
+      } catch (e) {
+        endMessage("Could not check: " + e.message, "bad");
+      }
+    }
+
+    async function closeCall() {
+      var o = el("outcome").value;
+      if (!o) { endMessage("Please choose an outcome first"); return; }
+      try {
+        await api("/calls/" + call.id + "/close", "POST", { outcome: o });
+        call = null;
+        el("endBox").style.display = "none";
+        el("startBox").style.display = "block";
+        el("pname").value = "";
+        el("pcompany").value = "";
+        el("outcome").value = "";
+        el("startMsg").textContent = "Call saved. You can see it in Past calls";
+      } catch (e) {
+        endMessage("Could not save: " + e.message, "bad");
+      }
+    }
+
+    async function loadPast() {
+      var box = el("pastList");
+      box.textContent = "Loading";
+      try {
+        var calls = await api("/calls");
+        if (!calls.length) { box.textContent = "No calls yet"; return; }
         box.innerHTML = "";
-        box.className = "";
-        data.forEach(function (c) {
-          var div = document.createElement("div");
-          div.className = "caller";
-          div.innerHTML = '<div class="name">' + c.name + '</div><div class="company">' + c.company + '</div>';
-          div.onclick = function () { selectCaller(c, div); };
-          box.appendChild(div);
+        calls.forEach(function (c) {
+          var s = stages[c.last_stage_reached - 1];
+          var d = document.createElement("div");
+          d.className = "past";
+          var left = document.createElement("div");
+          var n = document.createElement("div");
+          n.style.fontWeight = "bold";
+          n.textContent = c.prospect_name;
+          var co = document.createElement("div");
+          co.className = "muted";
+          co.style.fontSize = "13px";
+          co.textContent = (c.company || "") + " | outcome: " + (c.outcome || "not closed");
+          left.appendChild(n);
+          left.appendChild(co);
+          var tag = document.createElement("span");
+          tag.className = "tag";
+          tag.textContent = "Reached: " + (s ? s.name : c.last_stage_reached);
+          d.appendChild(left);
+          d.appendChild(tag);
+          box.appendChild(d);
         });
       } catch (e) {
-        box.textContent = "Could not load callers. Please refresh the page";
+        box.textContent = "Could not load calls: " + e.message;
       }
     }
 
-    async function selectCaller(c, div) {
-      document.querySelectorAll(".caller").forEach(function (el) { el.classList.remove("active"); });
-      div.classList.add("active");
-      document.getElementById("info").innerHTML =
-        "<b>" + c.name + "</b> from " + c.company + "<br>Notes: " + (c.notes || "none");
-      var tip = document.getElementById("tip");
-      tip.textContent = "Thinking...";
-      var question =
-        "I am making a cold call to " + c.name + " of " + c.company +
-        ". Notes: " + (c.notes || "none") +
-        ". Give me a short friendly opening line and 2 questions to ask. Keep it under 80 words.";
-      try {
-        var res = await fetch(BACKEND + "/ask?q=" + encodeURIComponent(question));
-        var data = await res.json();
-        tip.textContent = data.answer || "Something went wrong: " + JSON.stringify(data);
-      } catch (e) {
-        tip.textContent = "Could not get the AI answer. Please try again";
-      }
-    }
-
-    loadCallers();
+    loadStages();
   </script>
 </body>
 </html>
