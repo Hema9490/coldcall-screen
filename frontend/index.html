@@ -215,7 +215,6 @@
 
     async function saveCurrentStage() {
       var words = el("words").value.trim();
-      if (!picked && !words) return;
       await api("/calls/" + call.id + "/stage", "POST", {
         stage: stageNo,
         what_happened: picked,
