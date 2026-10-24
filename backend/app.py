@@ -31,6 +31,19 @@ def callers():
     return jsonify(r.json()), r.status_code
 
 
+@app.route("/models")
+def models():
+    headers = {"Authorization": "Bearer " + GROQ_API_KEY}
+    r = requests.get(
+        "https://api.groq.com/openai/v1/models",
+        headers=headers,
+        timeout=20,
+    )
+    data = r.json()
+    ids = [m["id"] for m in data.get("data", [])]
+    return jsonify({"models": ids})
+
+
 @app.route("/ask")
 def ask():
     q = request.args.get("q", "Say hello")
