@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Coldcall Screen</title>
+</head>
+<body style="font-family: Arial; padding: 40px;">
+  <h1>Coldcall Screen</h1>
+  <p id="status">Checking backend...</p>
+  <script>
+    fetch("https://coldcall-backend-hema.onrender.com/")
+      .then(r => r.json())
+      .then(d => document.getElementById("status").innerText = "Backend says: " + d.message)
+      .catch(() => document.getElementById("status").innerText = "Backend not reachable");
+  </script>
+</body>
+</html>
