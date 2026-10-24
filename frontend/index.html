@@ -1,17 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Coldcall Screen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cold Call Screen</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; color: #1f2933; }
+    header { background: #1f3a5f; color: white; padding: 16px 24px; }
+    main { display: flex; gap: 24px; padding: 24px; flex-wrap: wrap; }
+    .panel { background: white; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    #list { flex: 1; min-width: 260px; }
+    #detail { flex: 2; min-width: 300px; }
+    .caller { padding: 10px; border: 1px solid #d9e2ec; border-radius: 6px; margin-bottom: 8px; cursor: pointer; }
+    .caller:hover { background: #eef3f8; }
+    .caller.active { border-color: #1f3a5f; background: #eef3f8; }
+    .name { font-weight: bold; }
+    .company { color: #52606d; font-size: 14px; }
+    #tip { white-space: pre-wrap; line-height: 1.5; margin-top: 12px; }
+    .muted { color: #7b8794; }
+  </style>
 </head>
-<body style="font-family: Arial; padding: 40px;">
-  <h1>Coldcall Screen</h1>
-  <p id="status">Checking backend...</p>
+<body>
+  <header>
+    <h2 style="margin:0">Cold Call Screen</h2>
+  </header>
+  <main>
+    <div id="list" class="panel">
+      <h3 style="margin-top:0">Callers</h3>
+      <div id="callers" class="muted">Loading callers... the first load can take up to a minute</div>
+    </div>
+    <div id="detail" class="panel">
+      <h3 style="margin-top:0">Call Helper</h3>
+      <div id="info" class="muted">Click a caller on the left</div>
+      <div id="tip"></div>
+    </div>
+  </main>
+
   <script>
-    fetch("https://coldcall-backend-hema.onrender.com/")
-      .then(r => r.json())
-      .then(d => document.getElementById("status").innerText = "Backend says: " + d.message)
-      .catch(() => document.getElementById("status").innerText = "Backend not reachable");
+    var BACKEND = "https://coldcall-backend-hema.onrender.com";
+
+    async function loadCallers() {
+      var box = document.getElementById("callers");
+      try {
+        var res = await fetch(BACKEND + "/callers");
+        var data = await res.json();
+        box.innerHTML = "";
+        box.className = "";
+        data.forEach(function (c) {
+          var div = document.createElement("div");
+          div.className = "caller";
+          div.innerHTML = '<div class="name">' + c.name + '</div><div class="company">' + c.company + '</div>';
+          div.onclick = function () { selectCaller(c, div); };
+          box.appendChild(div);
+        });
+      } catch (e) {
+        box.textContent = "Could not load callers. Please refresh the page";
+      }
+    }
+
+    async function selectCaller(c, div) {
+      document.querySelectorAll(".caller").forEach(function (el) { el.classList.remove("active"); });
+      div.classList.add("active");
+      document.getElementById("info").innerHTML =
+        "<b>" + c.name + "</b> from " + c.company + "<br>Notes: " + (c.notes || "none");
+      var tip = document.getElementById("tip");
+      tip.textContent = "Thinking...";
+      var question =
+        "I am making a cold call to " + c.name + " of " + c.company +
+        ". Notes: " + (c.notes || "none") +
+        ". Give me a short friendly opening line and 2 questions to ask. Keep it under 80 words.";
+      try {
+        var res = await fetch(BACKEND + "/ask?q=" + encodeURIComponent(question));
+        var data = await res.json();
+        tip.textContent = data.answer || "Something went wrong: " + JSON.stringify(data);
+      } catch (e) {
+        tip.textContent = "Could not get the AI answer. Please try again";
+      }
+    }
+
+    loadCallers();
   </script>
 </body>
 </html>
